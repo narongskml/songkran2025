@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Songkran Water Gun Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #aef;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: url('asset/images/bg.jpg') center/cover no-repeat;
+    }
+    #target {
+      position: absolute;
+      width: 250px;
+      height: 300px;
+      background: url('asset/images/happygirl.png') center/cover no-repeat;
+      display: none;
+    }
+    .water {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      background: url('asset/images/splash.png') center/cover no-repeat;
+      pointer-events: none;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 18px;
+      color: #fff;
+      text-shadow: 1px 1px 4px #000;
+      display: none;
+    }
+    #game-over {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 30px;
+      color: red;
+      display: none;
+      text-align: center;
+    }
+    #start-btn, #share-btn {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 16px 30px;
+      font-size: 20px;
+      cursor: pointer;
+      background-color: #00ccee;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
+      z-index: 10;
+    }
+    #start-btn {
+      top: 45%;
+    }
+    #share-btn {
+      bottom: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <button id="start-btn">Start Game</button>
+    <button id="share-btn">📤 Share My Score</button>
+    <div id="target"></div>
+    <div id="info">
+      ⏱️ Time: <span id="time">60</span>s<br>
+      💦 Shots: <span id="shots">50</span><br>
+      🎯 Score: <span id="score">0</span>
+    </div>
+    <div id="game-over">
+        <div style="font-size: 36px; color: red; font-weight: bold;">Game Over!</div>
+        <div id="final-score" style="font-size: 48px; color: #fff; margin-top: 20px;">Final Score: 0</div>
+        <div style="font-size: 20px; margin-top: 10px;">Tap to play again</div>
+      </div>
+
+    <!-- Sounds -->
+    <audio id="bg-music" src="asset/sounds/game-music-player-console-8bit-background-intro-theme-297305.mp3" loop></audio>
+    <audio id="shoot-sound" src="asset/sounds/water-splash-102492.mp3"></audio>
+    <audio id="urgency-sound" src="asset/sounds/mixkit-video-game-bomb-alert.wav" loop></audio>
+  </div>
+
+  <script>
+    const game = document.getElementById('game');
+    const target = document.getElementById('target');
+    const shotsEl = document.getElementById('shots');
+    const scoreEl = document.getElementById('score');
+    const timeEl = document.getElementById('time');
+    const gameOverEl = document.getElementById('game-over');
+    const startBtn = document.getElementById('start-btn');
+    const shareBtn = document.getElementById('share-btn');
+    const infoPanel = document.getElementById('info');
+
+    const bgMusic = document.getElementById('bg-music');
+    const shootSound = document.getElementById('shoot-sound');
+    const urgencySound = document.getElementById('urgency-sound');
+
+    let shots = 50;
+    let score = 0;
+    let time = 60;
+    let gameActive = false;
+    let moveTargetInterval;
+    let timerInterval;
+
+    startBtn.addEventListener('click', startGame);
+    gameOverEl.addEventListener('click', startGame);
+    shareBtn.addEventListener('click', shareScreenshot);
+
+    function startGame() {
+      startBtn.style.display = 'none';
+      shareBtn.style.display = 'none';
+      gameOverEl.style.display = 'none';
+      target.style.display = 'block';
+      infoPanel.style.display = 'block';
+      gameActive = true;
+      shots = 50;
+      score = 0;
+      time = 60;
+      shotsEl.textContent = shots;
+      scoreEl.textContent = score;
+      timeEl.textContent = time;
+
+      bgMusic.play().catch(() => {});
+      urgencySound.pause();
+      urgencySound.currentTime = 0;
+
+      moveTargetInterval = setInterval(() => {
+        const x = Math.random() * (window.innerWidth - 80);
+        const y = Math.random() * (window.innerHeight - 100);
+        target.style.left = `${x}px`;
+        target.style.top = `${y}px`;
+      }, 1000);
+
+      timerInterval = setInterval(() => {
+        time--;
+        timeEl.textContent = time;
+
+        if (time <= 15 && urgencySound.paused) {
+          urgencySound.play().catch(() => {});
+        }
+
+        if (time <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function handleShoot(x, y) {
+      if (!gameActive || shots <= 0) return;
+
+      shootSound.currentTime = 0;
+      shootSound.play();
+
+      shots--;
+      shotsEl.textContent = shots;
+
+      const splash = document.createElement('div');
+      splash.className = 'water';
+      splash.style.left = `${x - 50}px`;
+      splash.style.top = `${y - 50}px`;
+      game.appendChild(splash);
+      setTimeout(() => splash.remove(), 300);
+
+      const rect = target.getBoundingClientRect();
+      if (
+        x >= rect.left &&
+        x <= rect.right &&
+        y >= rect.top &&
+        y <= rect.bottom
+      ) {
+        score += 10;
+        scoreEl.textContent = score;
+      }
+
+      if (shots === 0) endGame();
+    }
+
+    game.addEventListener('click', (e) => {
+      if (!gameActive || e.target.id === 'start-btn') return;
+      handleShoot(e.clientX, e.clientY);
+    });
+
+    game.addEventListener('touchstart', (e) => {
+      if (!gameActive || e.target.id === 'start-btn') return;
+      const touch = e.touches[0];
+      handleShoot(touch.clientX, touch.clientY);
+    });
+
+    function endGame() {
+      gameActive = false;
+      clearInterval(moveTargetInterval);
+      clearInterval(timerInterval);
+      target.style.display = 'none';
+      document.getElementById('final-score').textContent = `Final Score: ${score}`;
+      gameOverEl.style.display = 'block';
+      shareBtn.style.display = 'block';
+      bgMusic.pause();
+      urgencySound.pause();
+    }
+
+    function shareScreenshot() {
+      html2canvas(document.getElementById("game")).then(canvas => {
+        canvas.toBlob(blob => {
+          const file = new File([blob], "songkran-score.png", { type: "image/png" });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({
+              title: "Songkran Score!",
+              text: `My Songkran score: ${score} 🎯💦`,
+              files: [file]
+            });
+          } else {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = "songkran-score.png";
+            link.click();
+            alert("Screenshot saved! Share manually if needed 😊");
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>
