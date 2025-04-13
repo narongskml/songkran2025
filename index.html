@@ -121,6 +121,7 @@
     <!-- Sounds -->
     <audio id="bg-music" src="asset/sounds/game-music-player-console-8bit-background-intro-theme-297305.mp3" loop></audio>
     <audio id="shoot-sound" src="asset/sounds/water-splash-102492.mp3"></audio>
+    <audio id="hit-sound" src="asset/sounds/girl-laugh-149491.mp3"></audio>
     <audio id="urgency-sound" src="asset/sounds/warning-93402.mp3" loop></audio>
   </div>
 
@@ -214,6 +215,8 @@
       ) {
         score += 10;
         scoreEl.textContent = score;
+         // 🔊 Play hit sound
+         document.getElementById('hit-sound').play();
       }
 
       if (shots === 0) endGame();
